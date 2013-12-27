@@ -7,12 +7,16 @@ import (
 
 func main() {
     fmt.Println("Quick sample of the vEB tree")
-    bvTree := bvtree.BuildBvTree(1024)
-    bvTree.Insert(12)
-    //bvTree.Insert(11)
+    bvTree := bvtree.BuildBvTree(64)
+    bvTree.Insert(0)
+    bvTree.Insert(1)
+    bvTree.Insert(2)
+    bvTree.Insert(63)
+    //bvTree.Remove(2)
     fmt.Println("Alright.", bvTree)
+    bvTree.DbgPrint()
 
-    vals := []uint64{10,11,12,13,14}
+    vals := []uint64{0,1,2,3,4,5}
     for _, val := range vals {
         if bvTree.Contains(val) {
             fmt.Printf("it had %d!\n", val)
@@ -20,4 +24,5 @@ func main() {
             fmt.Printf("nope, didn't have %d...\n", val)
         }
     }
+
 }
