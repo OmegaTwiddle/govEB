@@ -21,18 +21,105 @@ type BvTree struct {
     bitvector []uint64
 }
 
+func (bvTree *BvTree) zeroRoot() bool {
+    fb := bvTree.suptree[0] & uint64(1 << 63)
+    return fb == 0
+}
+
+// Assuming the bitvector is of size 2^n, get the first index of the
+// last level in the supporting tree.
+// E.G. 
+func (bvTree *BvTree) llIndex() uint64 {
+    return bvTree.numBits / 2 - 1
+}
+
 func (bvTree *BvTree) Min() uint64 {
-    return 0
+    cPos := uint64(0)
+    if bvTree.zeroRoot() {
+        return 0
+    }
+
+    for cPos < bvTree.llIndex() {
+        rPos := rightIndex(cPos)
+        lPos := leftIndex(cPos)
+        lIdx, lOff := offsets(lPos)
+
+        lVal := bvTree.suptree[lIdx] & uint64(1 << (63 - lOff))
+
+        if lVal != 0 {
+            cPos = lPos
+        } else {
+            cPos = rPos
+        }
+
+    }
+
+    // Now that we're outside that loop, we need to 
+    // reach into the bitvector.
+    lPos, rPos := bvTree.bvIndices(cPos)
+    lIdx, lOff := offsets(lPos)
+    lVal := bvTree.bitvector[lIdx] & uint64(1 << (63 - lOff))
+
+    if lVal != 0 {
+        return lPos
+    }
+
+    return rPos
 }
 
 func (bvTree *BvTree) Max() uint64 {
-    return 0
+    cPos := uint64(0)
+    if bvTree.zeroRoot() {
+        return 0
+    }
+
+    for cPos < bvTree.llIndex() {
+        rPos := rightIndex(cPos)
+        lPos := leftIndex(cPos)
+        rIdx, rOff := offsets(rPos)
+
+        rVal := bvTree.suptree[rIdx] & uint64(1 << (63 - rOff))
+
+        if rVal != 0 {
+            cPos = rPos
+        } else {
+            cPos = lPos
+        }
+
+    }
+
+    // Now that we're outside that loop, we need to 
+    // reach into the bitvector.
+    lPos, rPos := bvTree.bvIndices(cPos)
+    rIdx, rOff := offsets(rPos)
+    rVal := bvTree.bitvector[rIdx] & uint64(1 << (63 - rOff))
+
+    if rVal != 0 {
+        return rPos
+    }
+
+    return lPos
+}
+
+func (bvTree *BvTree) hasBvBit(pos uint64) bool {
+    idx, off := offsets(pos)
+    return (bvTree.bitvector[idx] & uint64(1 << (63 - off))) != 0
 }
 
 /**
  * Returns the number above n in the tree.
  */
 func (bvTree *BvTree) Successor(n uint64) uint64 {
+    oldPos := n
+    treePos := bvTree.supIndex(n)
+    rPos, lPos := bvTree.bvIndices(treePos)
+    if lPos > oldPos {
+        if bvTree.hasBvBit(lPos) {
+            return lPos
+        } else {
+            return rPos
+        }
+    }
     return 0
 }
 
@@ -131,6 +218,16 @@ func BuildBvTree(numBits uint64) BvTree {
     result.bitvector = make([]uint64, numUints)
     result.numBits = numBits
     return result
+}
+
+/**
+ * Given an index at the lowest level of the support tree,
+ * returns the left and right "children" indices inside
+ * the bit vector.
+ */
+func (bvTree *BvTree) bvIndices(n uint64) (uint64, uint64) {
+    k := (n - (bvTree.numBits / 2 - 1)) * 2
+    return k, k + 1
 }
 
 func (bvTree *BvTree) supIndex(n uint64) uint64 {
