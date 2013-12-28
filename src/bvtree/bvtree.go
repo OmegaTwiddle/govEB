@@ -62,7 +62,6 @@ func (bvTree *BvTree) Insert(n uint64) {
     for sIdx > 0 {
         idx, off = offsets(sIdx)
         b = uint64(1 << (63 - off))
-        fmt.Println("inserting into suptree", idx, off)
         bvTree.suptree[idx] |= b
         sIdx = parentIndex(sIdx)
     }
@@ -88,21 +87,23 @@ func (bvTree *BvTree) Remove(n uint64) {
         bvTree.suptree[idx] &= b
     }
 
+    cIdx = parentIndex(cIdx)
     for cIdx > 0 {
-
+        idx, off := offsets(cIdx)
         // bit to clear.
         b = ^uint64(1 << (63 - off))
 
         // Values of left and right children.
-        rIdx, rOff = offsets(rightIndex(cIdx))
-        lIdx, lOff = offsets(leftIndex(cIdx))
+        rPos := rightIndex(cIdx)
+        lPos := leftIndex(cIdx)
+        rIdx, rOff = offsets(rPos)
+        lIdx, lOff = offsets(lPos)
 
-        rVal := bvTree.bitvector[rIdx] & uint64(1 << (63 - rOff))
-        lVal := bvTree.bitvector[lIdx] & uint64(1 << (63 - lOff))
+        rVal := bvTree.suptree[rIdx] & uint64(1 << (63 - rOff))
+        lVal := bvTree.suptree[lIdx] & uint64(1 << (63 - lOff))
         if (rVal == 0 && lVal == 0) {
             bvTree.suptree[idx] &= b
         }
-
 
         cIdx = parentIndex(cIdx)
     }
@@ -141,11 +142,11 @@ func parentIndex(n uint64) uint64 {
 }
 
 func leftIndex(n uint64) uint64 {
-    return (n * 1) + 1
+    return (n * 2) + 1
 }
 
 func rightIndex(n uint64) uint64 {
-    return (n * 1) + 2
+    return (n * 2) + 2
 }
 
 func offsets(n uint64) (uint64, uint64) {
