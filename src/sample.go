@@ -7,15 +7,17 @@ import (
     "time"
 )
 
-func main() {
+func oldmain() {
     rand.Seed(time.Now().UTC().UnixNano())
+    numBits := uint64(14336)
+    numToInsert := 20
     for i := 0; i < 10; i++ {
-        bvTree := bvtree.BuildBvTree(64)
-        vals := make(map[uint64] bool, 5)
-        myMin := uint64(64)
+        bvTree := bvtree.BuildBvTree(numBits)
+        vals := make(map[uint64] bool, numToInsert)
+        myMin := uint64(numBits)
         myMax := uint64(0)
-        for j := 0; j < 5; j++ {
-            n := uint64(rand.Int63n(64))
+        for j := 0; j < numToInsert; j++ {
+            n := uint64(rand.Int63n(int64(numBits)))
             fmt.Println(n)
             vals[n] = true
             bvTree.Insert(n)
@@ -26,49 +28,55 @@ func main() {
                 myMax = n
             }
         }
-        checkTree(bvTree, myMin, myMax, vals)
+        checkTree(bvTree, myMin, myMax, vals, []uint64{})
 
     }
 }
 
-func oldmain() {
+func buildBvTree(vals []uint64, ghosts []uint64, size uint64) bvtree.BvTree {
+
+    bvTree := bvtree.BuildBvTree(size)
+    for _, val := range(vals) {
+        bvTree.Insert(val)
+    }
+
+    for _, ghost := range(ghosts) {
+        bvTree.Insert(ghost)
+        bvTree.Remove(ghost)
+    }
+    return bvTree
+}
+
+func main() {
     fmt.Println("Quick sample of the vEB tree")
-    bvTree := bvtree.BuildBvTree(64)
-    bvTree.Insert(0)
-    bvTree.Insert(1)
-    bvTree.Insert(2)
-    bvTree.Insert(33); bvTree.Remove(33)
-    bvTree.Insert(34); bvTree.Remove(34)
-    bvTree.Insert(35); bvTree.Remove(35)
-    //bvTree.Insert(37)
-    bvTree.Insert(38); bvTree.Remove(38)
-    //bvTree.Insert(63)
-    //bvTree.Remove(0)
-    bvTree.Remove(1)
-    bvTree.Remove(2)
-    //bvTree.Remove(2)
-    fmt.Println("Alright.", bvTree)
-    bvTree.DbgPrint()
+    vals := []uint64{418,2208,8086,751,2770,10610,8021,9497,4221,3506,5223,2424,13567,8030,10316,1602,11062,1094,12052,2852}
+    ghosts := []uint64{10,20,30,40,50,60,70,80,90,100}
+    bvTree := buildBvTree(vals, ghosts, 14336)
+    //bvTree.DbgPrint()
 
-    vals := []uint64{0,1,2,3,4,5,32,33,34,35,36,37,38,39,62,63}
-    for _, val := range vals {
-        if bvTree.Contains(val) {
-            fmt.Printf("it had %d!\n", val)
-        } else {
-            fmt.Printf("nope, didn't have %d...\n", val)
-        }
+    mapVals := make(map[uint64] bool, 20)
+    for _, val := range(vals) {
+        mapVals[val] = true
+        bvTree.Insert(val)
     }
 
-    fmt.Println("The min of the tree was: ", bvTree.Min())
+    checkTree(bvTree, 418, 13567, mapVals, ghosts)
 
 }
 
-func checkTree(bvTree bvtree.BvTree, myMin uint64, myMax uint64, vals map[uint64] bool) {
+func checkTree(bvTree bvtree.BvTree, myMin uint64, myMax uint64, vals map[uint64] bool, ghosts []uint64) {
         fmt.Println(bvTree)
         fmt.Printf("min/max were %d/%d\n ", bvTree.Min(), bvTree.Max())
         bvTree.DbgPrint()
+
+        for _, ghost := range(ghosts) {
+            if bvTree.Contains(ghost) {
+                panic("Uh oh, ghost in the system.")
+            }
+        }
+
         if myMin != bvTree.Min() {
-            panic("Incorrect min calculated.")
+            panic(fmt.Sprintf("myMin: %d, bvTre.Min(): %d\n", myMin, bvTree.Min()))
         }
 
         if myMax != bvTree.Max() {
@@ -77,6 +85,7 @@ func checkTree(bvTree bvtree.BvTree, myMin uint64, myMax uint64, vals map[uint64
 
         cur := myMin
         for cur < myMax {
+            fmt.Printf("Found a val: %d\n", cur)
             if !bvTree.Contains(cur) {
                 panic ("doesn't contain a certain successor!")
             }
@@ -84,8 +93,29 @@ func checkTree(bvTree bvtree.BvTree, myMin uint64, myMax uint64, vals map[uint64
             if !vals[cur] {
                 panic("had a value i didn't put in!")
             }
-            fmt.Printf("successor was %d\n", bvTree.Successor(cur))
-            cur = myMax//bvTree.Successor(cur)
+
+            cur = bvTree.Successor(cur)
+        }
+
+        if cur != myMax {
+            panic ("Successor didn't return max...!")
+        }
+
+        for cur > myMin {
+            fmt.Printf("Found a val: %d\n", cur)
+            if !bvTree.Contains(cur) {
+                panic("doesn't contain a certain predecessor!")
+            }
+
+            if !vals[cur] {
+                panic("had a value i didn't put in!")
+            }
+
+            cur = bvTree.Predecessor(cur)
+        }
+
+        if cur != myMin {
+            panic("Predecessor didn't return min...")
         }
 
         for val, _ := range(vals) {
