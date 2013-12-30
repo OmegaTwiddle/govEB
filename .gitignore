@@ -4,6 +4,8 @@
 *.so
 *.swp
 .*.swp
+*.swo
+.*.swo
 
 # Folders
 _obj

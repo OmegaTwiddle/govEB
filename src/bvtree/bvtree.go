@@ -198,7 +198,7 @@ func (bvTree *BvTree) Successor(n uint64) uint64 {
 /**
  * returns true if the bvTree contains the given uint64.
  */
-func (bvTree * BvTree) Contains(n uint64) bool {
+func (bvTree *BvTree) Contains(n uint64) bool {
     idx, off := offsets(n)
     b := uint64(1 << (63 - off))
     if (bvTree.bitvector[idx] & b) == 0 {
@@ -285,7 +285,7 @@ func getNumUints(numBits uint64) uint64 {
     return (result / uint64(64))
 }
 
-func BuildBvTree(numBits uint64) BvTree {
+func BuildBvTree(numBits uint64) *BvTree {
     result := BvTree{}
 
     // The number of uints we need is size / 64
@@ -300,7 +300,7 @@ func BuildBvTree(numBits uint64) BvTree {
     result.suptree = make([]uint64, numUints)
     result.bitvector = make([]uint64, numUints)
     result.numBits = numUints * uint64(64)
-    return result
+    return &result
 }
 
 /**
@@ -336,7 +336,6 @@ func (bvTree *BvTree) maxLlIndex() uint64 {
     return bvTree.numBits - 2
 }
 
-
 /**
  * Given an index at the lowest level of the support tree,
  * returns the left and right "children" indices inside
@@ -359,22 +358,6 @@ func (bvTree *BvTree) supIndex(n uint64) uint64 {
     return (bvTree.numBits / 2 - 1) + (n / 2)
 }
 
-func parentIndex(n uint64) uint64 {
-    return (n - 1) / 2
-}
-
-func leftIndex(n uint64) uint64 {
-    return (n * 2) + 1
-}
-
-func rightIndex(n uint64) uint64 {
-    return (n * 2) + 2
-}
-
-func offsets(n uint64) (uint64, uint64) {
-    return n / 64, n % 64
-}
-
 func (bvTree *BvTree) checkBit(n uint64) {
     if bvTree.hasStBit(n) {
         fmt.Printf("Has St bit:          %d\n", n)
@@ -394,17 +377,4 @@ func (bvTree *BvTree) DbgPrint() {
     //    dbgPrintBin(val)
     //}
     fmt.Println(" ")
-}
-
-func dbgPrintBin(n uint64) {
-    for i := uint64(0); i < 64; i++ {
-        b := uint64(1 << (63 - i))
-        if (n & b) == 0 {
-            fmt.Printf("0")
-        } else {
-            fmt.Printf("1")
-        }
-    }
-    fmt.Printf("\n")
-
 }
